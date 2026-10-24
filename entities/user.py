@@ -1,4 +1,4 @@
-from artist_observer import ArtistObserver
+
 from enums.subscription_tier import SubscriptionTier
 import uuid
 from typing import Set
