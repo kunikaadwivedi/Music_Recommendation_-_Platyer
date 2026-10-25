@@ -4,9 +4,9 @@ from entities.song import Song
 from entities.artist import Artist
 from entities.user import User
 from entities.player import Player
-from strategy.recommendation.simple_recommendation_strategy import SimpleRecommendationStrategy
+from strategy.recommendation.simple_recommendation_strategy import SimpleRecommendationSystem
 from services.search_service import SearchService
-from services.recommendation_service import  RecommendationService()
+from services.recommendation_service import RecommendationService
 
 class MusicStreamingSystem:
     _instance = None
@@ -27,17 +27,17 @@ class MusicStreamingSystem:
             self._artists: Dict[str, Artist] = {}
             self._player = Player()
             self._search_service = SearchService()
-            self._recommendation_service = RecommendationService(SimpleRecommendationStrategy())
+            self._recommendation_service = RecommendationService(SimpleRecommendationSystem())
             self._initialized = True
             
     @classmethod
     def get_instance(cls):
         return cls()
     
-    def register_user(self, user:User):
+    def register_user(self, user: User):
         self._users[user.id] = user
         
-    def add_song(self, song_id:str,title:str, artist_id: str, duration: int) -> Song:
+    def add_song(self, song_id: str, title: str, artist_id: str, duration: int) -> Song:
         song = Song(song_id, title, self._artists[artist_id], duration)
         self._songs[song.id] = song
         return song
@@ -56,7 +56,3 @@ class MusicStreamingSystem:
     
     def get_player(self) -> Player:
         return self._player
-    
-    
-            
-            

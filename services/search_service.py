@@ -1,7 +1,6 @@
-from optional import List
+from typing import List
 from entities.song import Song
 from entities.artist import Artist
-
 
 class SearchService:
     def search_songs_by_title(self, songs: List[Song], query: str) -> List[Song]:

@@ -1,5 +1,5 @@
 from strategy.recommendation.recommendation_strategy import RecommendationStrategy
-from optional import List
+from typing import List
 from entities.song import Song
 
 class RecommendationService:

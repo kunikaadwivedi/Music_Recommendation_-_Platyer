@@ -1,8 +1,9 @@
 from entities.playable import Playable
 from entities.artist import Artist
 from typing import List
+
 class Song(Playable):
-    def __init__(self, song_id:str, title: str, artist: 'Artist',duration_in_seconds:int):
+    def __init__(self, song_id: str, title: str, artist: 'Artist', duration_in_seconds: int):
         self._song_id = song_id
         self._title = title
         self._artist = artist
@@ -19,7 +20,7 @@ class Song(Playable):
     
     @property
     def id(self) -> str:
-        return self._id
+        return self._song_id
     
     @property
     def title(self) -> str:
@@ -28,5 +29,3 @@ class Song(Playable):
     @property
     def artist(self) -> 'Artist':
         return self._artist
-    
-    
