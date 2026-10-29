@@ -29,6 +29,53 @@ class MusicStreamingSystem:
             self._search_service = SearchService()
             self._recommendation_service = RecommendationService(SimpleRecommendationStrategy())
             self._initialized = True
+    
+    def ingest_from_spotify(self, query: str = "year:2024", limit: int = 10) -> int:
+        """Pulls live streaming tracks via Spotify Search API and maps into domain entities."""
+        from services.spotify_client import SpotifyClient
+        client = SpotifyClient()
+        raw_tracks = client.search_tracks(query=query, limit=limit)
+        
+        count = 0
+        for item in raw_tracks:
+            if not item.get("id"):
+                continue
+            artist_data = item["artists"][0]
+            artist_id = artist_data["id"]
+            artist_name = artist_data["name"]
+
+            # Register or retrieve artist
+            if artist_id not in self._artists:
+                self.add_artist(Artist(artist_id, artist_name))
+
+            song_id = item["id"]
+            title = item["name"]
+            duration = int(item.get("duration_ms", 180000) / 1000)
+            spotify_url = item.get("external_urls", {}).get("spotify")
+            preview_url = item.get("preview_url")
+
+            song = Song(
+                song_id=song_id,
+                title=title,
+                artist=self._artists[artist_id],
+                duration_in_seconds=duration,
+                spotify_url=spotify_url,
+                preview_url=preview_url
+            )
+            self._songs[song.id] = song
+            count += 1
+
+        print(f"[System] Ingested {count} live tracks from Spotify for query '{query}'.")
+        return count
+
+    def get_vector_recommendations(self, seed_song: Song, top_k: int = 5) -> List[Song]:
+        """Runs vector-based similarity search using the active strategy."""
+        from strategy.recommendation.vector_recommendation_strategy import VectorRecommendationStrategy
+        if isinstance(self._recommendation_service._strategy, VectorRecommendationStrategy):
+            return self._recommendation_service._strategy.recommend_similar(
+                seed_song, list(self._songs.values()), top_k=top_k
+            )
+        return self._recommendation_service.generate_recommendations(list(self._songs.values()))
             
     @classmethod
     def get_instance(cls):

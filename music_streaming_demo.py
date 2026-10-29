@@ -1,83 +1,56 @@
-from entities.artist import Artist
-from entities.album import Album
-from entities.user import User
+# music_streaming_demo.py
 from music_streaming_system import MusicStreamingSystem
+from strategy.recommendation.vector_recommendation_strategy import VectorRecommendationStrategy
+from entities.user import User
 from enums.subscription_tier import SubscriptionTier
-from entities.playlist import Playlist
 
-class MusicStreamingDemo:
-    @staticmethod
-    def main():
-        system = MusicStreamingSystem.get_instance()
-        
-        # --- Setup Catalog ---
-        daft_punk = Artist("art1", "Daft Punk")
-        system.add_artist(daft_punk)
-        
-        discovery = Album("Discovery", daft_punk)
-        s1 = system.add_song("s1", "One More Time", daft_punk.id, 320)
-        s2 = system.add_song("s2", "Aerodynamic", daft_punk.id, 212)
-        s3 = system.add_song("s3", "Digital Love", daft_punk.id, 301)
-        s4 = system.add_song("s4", "Radioactive", daft_punk.id, 311)
-        discovery.add_track(s1)
-        discovery.add_track(s2)
-        discovery.add_track(s3)
-        discovery.add_track(s4)
-        
-        # --- Register Users ---
-        free_user = User("Alice", SubscriptionTier.FREE, 0)
-        premium_user = User("Bob", SubscriptionTier.PREMIUM, 0)
-        system.register_user(free_user)
-        system.register_user(premium_user)
-        
-        # --- Observer Pattern: User follows artist ---
-        print("--- Observer Pattern Demo ---")
-        premium_user.follow_artist(daft_punk)
-        daft_punk.release_album(discovery)  # This will notify Bob
-        print()
-        
-        # --- Strategy Pattern: Playback behavior ---
-        print("--- Strategy Pattern (Free vs Premium) & State Pattern (Player) Demo ---")
-        player = system.get_player()
-        player.load(discovery, free_user)
-        
-        # --- Controlling the player ---
-        player.click_play()  # Plays song 1
-        player.click_next()  # Plays song 2
-        player.click_pause()  # Pauses song 2
-        player.click_play()  # Resumes song 2
-        player.click_next()  # Plays song 3
-        player.click_next()  # Plays song 4 (ad for free user)
-        print()
-        
-        # --- Premium user experience (no ads) ---
-        print("--- Premium User Experience ---")
-        player.load(discovery, premium_user)
-        player.click_play()
-        player.click_next()
-        print()
-        
-        # --- Composite Pattern: Play a playlist ---
-        print("--- Composite Pattern Demo ---")
-        my_playlist = Playlist("My Awesome Mix")
-        my_playlist.add_track(s3)  # Digital Love
-        my_playlist.add_track(s1)  # One More Time
-        
-        player.load(my_playlist, premium_user)
-        player.click_play()
-        player.click_next()
-        print()
-        
-        # --- Search and Recommendation ---
-        print("--- Search and Recommendation Service Demo ---")
-        search_results = system.search_songs_by_title("love")
-        print(f"Search results for 'love': {search_results}")
-        
-        artist_results = system.search_artists_by_name("daft")
-        print(f"Artist search for 'daft': {[a.get_name() for a in artist_results]}")
-        
-        recommendations = system.get_song_recommendations()
-        print(f"Your daily recommendations: {recommendations}")
+def main():
+    system = MusicStreamingSystem.get_instance()
+
+    print("==================================================")
+    print(" 1. Ingesting Live Data Streams from Spotify ")
+    print("==================================================")
+    system.ingest_from_spotify(query="rock 2024", limit=15)
+    system.ingest_from_spotify(query="electronic hits", limit=15)
+    system.ingest_from_spotify(query="top pop", limit=15)
+    
+    catalog = list(system._songs.values())
+    print(f"\nTotal catalog loaded: {len(catalog)} live songs across {len(system._artists)} artists.\n")
+
+    print("==================================================")
+    print(" 2. Initializing AI Vector Recommendation Engine ")
+    print("==================================================")
+    vector_strategy = VectorRecommendationStrategy()
+    system._recommendation_service.set_strategy(vector_strategy)
+    vector_strategy.build_index(catalog)
+
+    # Pick a seed song from the catalog
+    seed = catalog[0]
+    print(f"\n>>> Seed Track: {seed} <<<\n")
+
+    print("==================================================")
+    print(" 3. Two-Stage Retrieval (ANN + MMR Re-Ranking) ")
+    print("==================================================")
+    recommendations = system.get_vector_recommendations(seed, top_k=5)
+
+    for rank, track in enumerate(recommendations, start=1):
+        print(f"Rank {rank}: {track.title} — {track.artist.get_name()}")
+
+    print("\n==================================================")
+    print(" 4. Playback System with Strategy & State Patterns ")
+    print("==================================================")
+    user = User("Alice", SubscriptionTier.PREMIUM, 0)
+    player = system.get_player()
+    
+    # Load recommended tracks into player queue
+    from entities.playlist import Playlist
+    ai_playlist = Playlist("AI Recommendations")
+    for track in recommendations:
+        ai_playlist.add_track(track)
+
+    player.load(ai_playlist, user)
+    player.click_play()
+    player.click_next()
 
 if __name__ == "__main__":
-    MusicStreamingDemo.main()
+    main()
