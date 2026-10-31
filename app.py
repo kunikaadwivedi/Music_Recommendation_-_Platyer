@@ -1,4 +1,4 @@
-# app.py (Standalone Version for Streamlit Cloud)
+# app.py
 import streamlit as st
 import os
 from music_streaming_system import MusicStreamingSystem
@@ -18,7 +18,7 @@ def get_system_and_strategy():
     try:
         system.ingest_from_spotify(query="top hits", limit=10)
     except Exception as e:
-        st.warning(f"Initial ingestion notice: {e}")
+        print(f"Initial ingestion notice: {e}")
     
     catalog = list(system._songs.values())
     if catalog:
